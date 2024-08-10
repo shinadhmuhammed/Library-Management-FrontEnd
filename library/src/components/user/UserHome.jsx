@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useNavigate } from 'react-router-dom'; 
 import createAxios from '../../Services/Axios';
 
 const LibraryHomePage = () => {
@@ -8,6 +8,10 @@ const LibraryHomePage = () => {
   const [returnDate, setReturnDate] = useState('');
   const [userDetails, setUserDetails] = useState({ name: '', id: '' });
   const [transactions, setTransactions] = useState([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalTransactions, setModalTransactions] = useState([]);
+  const navigate = useNavigate(); 
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -32,7 +36,7 @@ const LibraryHomePage = () => {
     };
 
     fetchBooks();
-   fetchTransactions();
+    fetchTransactions();
   }, []);
 
   const handlePurchase = async () => {
@@ -57,22 +61,66 @@ const LibraryHomePage = () => {
     }
   };
 
-  const handleReturn = async (transactionId) => {
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
+
+  const handleViewTransactions = async () => {
+    setIsDropdownOpen(false); 
     try {
-      await axios.post('/api/returnBook', { transactionId });
-      alert('Book returned successfully');
-      setTransactions(transactions.filter(transaction => transaction._id !== transactionId));
+      const axiosInstance = createAxios();
+      const response = await axiosInstance.get('/gettransactions');
+      setModalTransactions(response.data);
+      setIsModalOpen(true);
     } catch (error) {
-      console.error('Error returning book:', error);
-      alert('Failed to return book');
+      console.error('Error fetching transactions:', error);
+      alert('Failed to fetch transactions');
     }
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
+
+  const handleLogout = () => {
+    localStorage.removeItem('token'); 
+    navigate('/'); 
   };
 
   return (
     <div className="bg-gray-100 min-h-screen">
-      <header className="bg-blue-600 text-white py-6 px-4">
-        <h1 className="text-3xl font-bold">Welcome to Our Library Management System</h1>
-        <p className="mt-2">Here you can purchase books and return them after a specific time.</p>
+      <header className="bg-slate-800 text-white py-6 px-4 flex justify-between items-center shadow-lg">
+        <div>
+          <h1 className="text-3xl font-bold">Welcome to Our Library Management System</h1>
+          <p className="mt-2">Here you can purchase books and return them after a specific time.</p>
+        </div>
+        <div className="relative">
+          <button 
+            onClick={toggleDropdown}
+            className="text-white focus:outline-none"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </button>
+          {isDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1">
+              <button
+                onClick={handleViewTransactions}
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+              >
+                Transactions
+              </button>
+              <button
+                onClick={handleLogout}
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+              >
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
       </header>
       
       <main className="container mx-auto px-4 py-8">
@@ -90,12 +138,11 @@ const LibraryHomePage = () => {
                     <span className="text-red-600">No</span>}
                 </p>
                 {transaction ? (
-                  <button 
-                    onClick={() => handleReturn(transaction._id)}
-                    className="w-full py-2 px-4 bg-red-500 text-white rounded hover:bg-red-600"
-                  >
-                    Return
-                  </button>
+                  <div 
+                  className="w-full py-2 px-4 bg-gray-400 text-white text-center rounded cursor-default"
+                >
+                  Purchased
+                </div>
                 ) : (
                   <button 
                     onClick={() => setSelectedBook(book)}
@@ -125,13 +172,6 @@ const LibraryHomePage = () => {
                 onChange={(e) => setUserDetails({...userDetails, name: e.target.value})}
                 className="w-full p-2 border border-gray-300 rounded"
               />
-              {/* <input
-                type="text"
-                placeholder="Your ID"
-                value={userDetails.id}
-                onChange={(e) => setUserDetails({...userDetails, id: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded"
-              /> */}
               <input
                 type="date"
                 placeholder="Return Date"
@@ -149,6 +189,29 @@ const LibraryHomePage = () => {
           </div>
         )}
       </main>
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-semibold">Your Transactions</h2>
+              <button onClick={closeModal} className="text-2xl">&times;</button>
+            </div>
+            {modalTransactions.length > 0 ? (
+              <ul className="space-y-4">
+                {modalTransactions.map((transaction) => (
+                  <li key={transaction._id} className="border-b pb-2">
+                    <p>Book ID: {transaction.bookId}</p>
+                    <p>Return Date: {new Date(transaction.returnDate).toLocaleDateString()}</p>
+                    <p>Type: {transaction.transactionType}</p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No transactions found.</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
