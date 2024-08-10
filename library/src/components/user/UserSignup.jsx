@@ -14,6 +14,36 @@ function UserSignup() {
 
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState("");
+  const [successMessage, setSuccessMessage] = useState(""); 
+
+
+  const validatePassword = (password) => {
+    const hasUppercase = /[A-Z]/.test(password);
+    return password.length >= 6 && hasUppercase;
+  };
+
+
+  const validateForm = () => {
+    let valid = true;
+    let newErrors = {};
+
+   
+    Object.keys(formData).forEach((key) => {
+      if (!formData[key]) {
+        newErrors[key] = "This field is required";
+        valid = false;
+      }
+    });
+
+    // Validate password
+    if (formData.password && !validatePassword(formData.password)) {
+      newErrors.password = "Password must be at least 6 characters long and include an uppercase letter";
+      valid = false;
+    }
+
+    setErrors(newErrors);
+    return valid;
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,13 +56,29 @@ function UserSignup() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
+    setFormError("");
+    setSuccessMessage(""); 
+
+  
+    if (!validateForm()) {
+      return; 
+    }
 
     try {
       const axiosInstance = createAxios();
       const response = await axiosInstance.post("/signup", formData);
       console.log("Signup successful:", response.data);
+      setSuccessMessage("Signup successful! You can now log in."); 
+      setFormData({
+        username: "",
+        name: "",
+        email: "",
+        contact: "",
+        password: "",
+      }); 
     } catch (error) {
       console.error("Signup error:", error);
+      setFormError("An error occurred during signup. Please try again."); 
     }
   };
 
@@ -41,6 +87,9 @@ function UserSignup() {
       <div className="flex w-full max-w-4xl bg-white shadow-lg rounded-lg">
         <div className="flex-1 p-8">
           <h2 className="text-2xl font-bold mb-6">User SignUp</h2>
+          {successMessage && (
+            <p className="text-green-500 mb-4">{successMessage}</p>
+          )}
           {formError && <p className="text-red-500 mb-4">{formError}</p>}
           <form onSubmit={handleSubmit}>
             <div className="mb-4">

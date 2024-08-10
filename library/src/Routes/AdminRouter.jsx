@@ -4,6 +4,7 @@ import Signup from '../components/admin/Signup';
 import LoginPage from '../Pages/AdminPages/LoginPage';
 import HomePage from '../Pages/AdminPages/HomePage';
 import AddBookPage from '../Pages/AdminPages/AddBookPage';
+import TransactionPage from '../Pages/AdminPages/TransactionPage';
 
 function AdminRouter() {
   return (
@@ -13,6 +14,7 @@ function AdminRouter() {
         <Route path='/login' element={<LoginPage/>}/>
         <Route path='/home' element={<HomePage/>}/>
         <Route path='/add-book' element={<AddBookPage/>}/>
+        <Route path='/transactions' element={<TransactionPage/>}/>
       </Routes>
     </div>
   )
